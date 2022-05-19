@@ -10,9 +10,12 @@ tcoj = lambda x: time.strftime("%d.%m.%Y", time.localtime(x))
 conn = sl.connect('Stabis.db', check_same_thread=False)
 cursor = conn.cursor()
 
-def db_table_val(ID_User: int, Date: str, Time:str, Location:str):
-    cursor.execute('INSERT INTO Users (ID_User, Date, Time, Location) VALUES (?,?,?,?)',(ID_User, Date, Time, Location))
+def db_table_val(ID_User: int, Date: str, Time:str, Location:str, Latitude:str, Longitude:str):
+    cursor.execute('INSERT INTO Users (ID_User, Date, Time, Location, Latitude, Longitude) VALUES (?,?,?,?,?,?)',(ID_User, Date, Time, Location, Latitude, Longitude))
     conn.commit()
+def db_table_update(Latitude: str, Longitude: str):
+    cursor.execute('UPDATE Users SET Latitude = ?, Longitude = ?')
+    conn.commit
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -62,8 +65,10 @@ def location(message):
         us_id = message.from_user.id
         us_date = tconv(message.date)
         us_time = tcoj(message.date)
+        us_latitude = message.location.latitude
+        us_longitude = message.location.longitude
         us_location = coords
-        db_table_val(ID_User=us_id, Date=us_date, Time=us_time, Location=us_location)
+        db_table_val(ID_User=us_id, Date=us_date, Time=us_time, Location=us_location, Latitude=us_latitude, Longitude=us_longitude)
 
 
 def geocoder(latitude, longitude):
