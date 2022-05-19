@@ -1,9 +1,12 @@
-import telebot
+import telebot, requests, time
+import json
 import sqlite3 as sl
 from telebot import types
-token='5367696164:AAHX8QGlpmlTMcvzgcx5QmYnv9KDs1X231I'
-bot=telebot.TeleBot(token)
-conn = sl.connect('test.db', check_same_thread=False)
+token = '5367696164:AAHX8QGlpmlTMcvzgcx5QmYnv9KDs1X231I'
+bot = telebot.TeleBot(token)
+tconv = lambda x: time.strftime("%H:%M:%S", time.localtime(x))
+tcoj = lambda x: time.strftime("%d.%m.%Y", time.localtime(x))
+conn = sl.connect('Stabis.db', check_same_thread=False)
 cursor = conn.cursor()
 def db_table_val(ID_User: int, Date: str, Time:str, Location:str):
     cursor.execute('INSERT INTO Users (ID_User, Date, Time, Location) VALUES (?,?,?,?)',(ID_User, Date, Time, Location))
@@ -31,6 +34,8 @@ def message_reply(message):
         item1 = types.KeyboardButton('Тест 3')
         markup.add(item1)
         bot.send_message(message.chat.id, "Тест 1 пройден успешно", reply_markup=markup)
+    if message.text.lower=='бд':
+        bot.send_message(message.from_user.id, 'Привет! Ваши данные внесены в базу данных')
     elif message.text=="Тест 2":
         bot.send_message(message.chat.id, "Тест 2 пройден успешно")
     elif message.text=="Тест 3":
@@ -45,7 +50,12 @@ def message_reply(message):
         bot.send_message(message.chat.id, 'Вы ввели буквы')
     elif message.text.isalpha and message.text.isdigit:
         bot.send_message(message.chat.id, 'Вы ввели буквы с цифрами')
-        bot.send_message('Вы использовали незнакомый боту символ')
+    us_id = message.from_user.id
+    us_date = tconv(message.date)
+    us_time = tcoj(message.date)
+    us_location = message.from_user.username
+
+    db_table_val(ID_User=us_id, Date=us_date, Time=us_time, Location=us_location)
 @bot.callback_query_handler(func=lambda call: True)
 def keyboard2(call):
     menu2 = types.InlineKeyboardMarkup()
@@ -55,4 +65,19 @@ def keyboard2(call):
         bot_msg = bot.send_message(call.message.chat.id, 'Нажмите третью Inline кнопку', reply_markup=menu2)
     elif call.data == 'third':
         bot_msg = bot.send_message(call.message.chat.id, 'Конец')
+@bot.message_handler(content_types=["location"])
+def location(message):
+    if message.location is not None:
+        bot.send_message == (message.location)
+        bot.send_message(message.chat.id, geocoder(message.location.latitude, message.location.longitude))
+
+
+def geocoder(latitude, longitude):
+    token2 = 'pk.0a7f690b1ee2f5bc671e79241d167b57'
+    headers = {"Accept-Language": "ru"}
+    try:
+        address = requests.get(f'https://eu1.locationiq.com/v1/reverse.php?key={token2}&lat={latitude}&lon={longitude}&format=json', headers=headers).json()
+        return f'Твое местоположение: {address.get("display_name")}'
+    except Exception as e:
+        return 'error'
 bot.polling(none_stop=True)
