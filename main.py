@@ -21,7 +21,8 @@ def button_message(message):
     markup=types.ReplyKeyboardMarkup(resize_keyboard=True)
     item1=types.KeyboardButton('Данные о геопозиции', request_location=True)
     item2=types.KeyboardButton('Данные о телефоне', request_contact=True)
-    markup.add(item1, item2)
+    item3=types.KeyboardButton('Тест')
+    markup.add(item1, item2, item3)
     bot.send_message(message.chat.id, 'Выберите, что вам надо', reply_markup=markup)
 @bot.message_handler(content_types='text')
 def message_reply(message):
@@ -30,23 +31,21 @@ def message_reply(message):
         item1 = types.KeyboardButton('Тест 3')
         markup.add(item1)
         bot.send_message(message.chat.id, "Тест 1 пройден успешно", reply_markup=markup)
-    elif message.text=="Тест2":
+    elif message.text=="Тест 2":
         bot.send_message(message.chat.id, "Тест 2 пройден успешно")
-    elif message.text=="Тест3":
+    elif message.text=="Тест 3":
         bot.send_message(message.chat.id, "Тест 3 пройден успешно")
+        menu1 = types.InlineKeyboardMarkup()
+        menu1.add(types.InlineKeyboardButton(text="Первая кнопка", callback_data="first"))
+        menu1.add(types.InlineKeyboardButton(text="Вторая кнопка", callback_data="second"))
+        bot_msg = bot.send_message(message.chat.id, 'Нажмите первую Inline кнопку', reply_markup=menu1)
     elif message.text.isdigit():
         bot.send_message(message.chat.id, 'Вы ввели цифры')
     elif message.text.isalpha():
         bot.send_message(message.chat.id, 'Вы ввели буквы')
     elif message.text.isalpha and message.text.isdigit:
         bot.send_message(message.chat.id, 'Вы ввели буквы с цифрами')
-    else:
         bot.send_message('Вы использовали незнакомый боту символ')
-    menu1=types.InlineKeyboardMarkup()
-    menu1.add(types.InlineKeyboardButton(text = "Первая кнопка", callback_data="first"))
-    menu1.add(types.InlineKeyboardButton(text = "Вторая кнопка", callback_data="second"))
-    if message.text == "Тест 3 пройден успешно":
-        bot_msg = bot.send_message(message.chat.id, 'Нажмите первую Inline кнопку', reply_markup=menu1)
 @bot.callback_query_handler(func=lambda call: True)
 def keyboard2(call):
     menu2 = types.InlineKeyboardMarkup()
