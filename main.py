@@ -5,7 +5,7 @@ token='5367696164:AAHX8QGlpmlTMcvzgcx5QmYnv9KDs1X231I'
 bot=telebot.TeleBot(token)
 conn = sl.connect('test.db', check_same_thread=False)
 cursor = conn.cursor()
-def db_table_val(ID_User: int, Date: str, Time:str, Location:str)
+def db_table_val(ID_User: int, Date: str, Time:str, Location:str):
     cursor.execute('INSERT INTO Users (ID_User, Date, Time, Location) VALUES (?,?,?,?)',(ID_User, Date, Time, Location))
     conn.commit()
 @bot.message_handler(commands=['start'])
