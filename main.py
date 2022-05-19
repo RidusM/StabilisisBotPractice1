@@ -16,8 +16,4 @@ def button_message(message):
     item1=types.KeyboardButton("Кнопка")
     markup.add(item1)
     bot.send_message(message.chat.id,'Выберите что вам надо',reply_markup=markup)
-@bot.message_handler(content_types='text')
-def message_reply(message):
-    if message.text=="Вывести ID":
-        bot.send_message(message.chat.id,"https://habr.com/ru/users/lubaznatel/")
 bot.infinity_polling()
