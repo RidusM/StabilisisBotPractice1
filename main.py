@@ -77,7 +77,7 @@ def geocoder(latitude, longitude):
     headers = {"Accept-Language": "ru"}
     try:
         address = requests.get(f'https://eu1.locationiq.com/v1/reverse.php?key={token2}&lat={latitude}&lon={longitude}&format=json', headers=headers).json()
-        return f'Твое местоположение: {address.get("display_name")}'
+        return f'Твое местоположение: {address["address"].get("city")}, {address["address"].get("road")} {address["address"].get("house_number")} '
     except Exception as e:
         return 'error'
 bot.polling(none_stop=True)
