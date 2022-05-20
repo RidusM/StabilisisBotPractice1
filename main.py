@@ -1,19 +1,20 @@
+import ast
+
 import telebot, requests, time, json, sqlite3 as sl
 from telebot import types
 
 token = '5367696164:AAHX8QGlpmlTMcvzgcx5QmYnv9KDs1X231I'
 bot = telebot.TeleBot(token)
-conn = sl.connect('Stabis.db', check_same_thread=False)
-cursor = conn.cursor()
-itr = cursor.execute("SELECT Location FROM Users").fetchall()
-select_Info = []
-for abInfo in itr:
-    select_Info.append(abInfo[])
-print(abInfo)
 tconv = lambda x: time.strftime("%H:%M:%S", time.localtime(x))
 tcoj = lambda x: time.strftime("%d.%m.%Y", time.localtime(x))
 
 
+def db_table_select():
+    conn = sl.connect('Stabis.db', check_same_thread=False)
+    cursor = conn.cursor()
+    cursor.execute("SELECT Location FROM Users")
+    obInfo = [item[0] for item in cursor.fetchall()]
+    return obInfo
 
 def db_table_val(ID_User: int, Date: str, Time:str, Location:str):
     conn = sl.connect('Stabis.db', check_same_thread=False)
@@ -25,11 +26,14 @@ def db_table_val(ID_User: int, Date: str, Time:str, Location:str):
 def db_table_update(Latitude: str, Longitude: str, Location: str):
     conn = sl.connect('Stabis.db', check_same_thread=False)
     cursor = conn.cursor()
-    cursor.execute("UPDATE Users SET Latitude = ?, Longitude = ? WHERE Location = 'Bruh'", (Latitude, Longitude, Location))
-def db_table_delete(Location:str):
+    cursor.execute("UPDATE Users SET Latitude = ?, Longitude = ? WHERE Location = '?'", (Latitude, Longitude, Location))
+    conn.commit()
+    cursor.close()
+    conn.close()
+def db_table_delete(Location:ast):
     conn = sl.connect('Stabis.db', check_same_thread=False)
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM Users WHERE Location = (?)", (Location, ))
+    cursor.execute("DELETE FROM Users WHERE Location = ?", (Location, ))
     conn.commit()
     cursor.close()
     conn.close()
@@ -53,7 +57,7 @@ def button_message(message):
     markup.row(item1)
     markup.row(item2)
     markup.row(item3, item4)
-    bot.send_message(message.chat.id, 'Выберите, что вам надо', reply_markup=markup)
+    bot.send_message(message.chat.id, 'Выберите, что вам надо', reply_markup=markup, )
 
 @bot.message_handler(func=lambda message: message.text == "Добавить название объекта")
 def add_object(message):
@@ -72,18 +76,35 @@ def add_geolog(message):
     msg = bot.send_message(message.chat.id, "Выберите объект", reply_markup=makeKeyboard())
     bot.register_next_step_handler(msg, add_geolog2)
 
-def add_geolog2(message):
-    bot.send_message(message.chat.id, "Геолокация добавлена")
-    db_table_update(Latitude=us_latitude, Longitude=us_longitude, Location=us_location)
+@bot.callback_query_handler(func=lambda call:True)
+def add_geolog2(callback_query):
+    text = callback_query.data
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    item1 = types.KeyboardButton("Отправить", request_location=True)
+    markup.add(item1)
+    if callback_query.data.startswith("['item'"):
+        print(ast.literal_eval(callback_query.data)[1])
+        bot_msg = bot.send_message(callback_query.from_user.id, "Подтвердите", reply_markup=markup)
+        us_location = ast.literal_eval(callback_query.data)[1]
+        ast.literal_eval(callback_query.data)[1]
 
 @bot.message_handler(func=lambda message: message.text == "Удалить объект")
 def del_object(message):
-    msg = bot.send_message(message.chat.id, "Введите название объекта")
+    msg = bot.send_message(message.chat.id, "Выберите объект", reply_markup=delKeyboard())
     bot.register_next_step_handler(msg, del_object2)
+@bot.callback_query_handler(func=lambda call:True)
+def del_object2(callback_query):
+    if callback_query.data.startswith("['del'"):
+        print(ast.literal_eval(callback_query.data)[1])
+        db_table_delete(Location=(ast.literal_eval(callback_query.data)[1]))
+        bot.send_message(callback_query.message.chat.id, 'Удалено')
 
-def del_object2(message):
-    bot.send_message(message.chat.id, "Удаление прошло успешно")
-    db_table_delete(Location=message.text)
+
+
+
+'''@bot.message_handler(func=lambda message: message.text == "Реестр объектов")
+def reg_object(message):
+    msg = bot.send_message(message.chat.id)'''
 
 @bot.message_handler(content_types=["location"])
 def location(message):
@@ -91,9 +112,12 @@ def location(message):
         bot.send_message == (message.location)
         coords = geocoder(message.location.latitude, message.location.longitude)
         bot.send_message(message.chat.id, coords)
-        us_latitude = message.location.latitude
-        us_longitude = message.location.longitude
-        db_table_update(Latitude=us_latitude, Longitude=us_longitude)
+        us_id = message.from_user.id
+        us_date = tconv(message.date)
+        us_time = tcoj(message.date)
+        us_location = add_geolog2
+        db_table_val(ID_User=us_id, Date=us_date, Time=us_time, Location=us_location)
+
 
 
 def geocoder(latitude, longitude):
@@ -105,10 +129,18 @@ def geocoder(latitude, longitude):
     except Exception as e:
         return 'error'
 
-'''def makeKeyboard():
+def makeKeyboard():
     markup5 = types.InlineKeyboardMarkup()
-    for row in obInfo:
-        markup5.add(types.InlineKeyboardButton(text=result, callback_data=select_Info"['result', '" + str(result) + "']"))
-    return markup5'''
+    obInfo1 = db_table_select()
+    for item in obInfo1:
+        markup5.add(types.InlineKeyboardButton(text=item, callback_data="['item', '" + str(item) + "']"))
+    return markup5
+
+def delKeyboard():
+    markup6 = types.InlineKeyboardMarkup()
+    obInfo1 = db_table_select()
+    for item in obInfo1:
+        markup6.add(types.InlineKeyboardButton(text=item, callback_data="['del', '" + str(item) + "']"))
+    return markup6
 
 bot.polling(none_stop=True)
