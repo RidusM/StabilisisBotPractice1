@@ -1,6 +1,4 @@
-import ast
-
-import telebot, requests, time, json, sqlite3 as sl
+import telebot, requests, time, json, ast, sqlite3 as sl
 from telebot import types
 
 token = '5367696164:AAHX8QGlpmlTMcvzgcx5QmYnv9KDs1X231I'
@@ -23,14 +21,14 @@ def db_table_val(ID_User: int, Date: str, Time:str, Location:str):
     conn.commit()
     cursor.close()
     conn.close()
-def db_table_update(Latitude: str, Longitude: str, Location: str):
+def db_table_update(Latitude: str, Longitude: str, Location):
     conn = sl.connect('Stabis.db', check_same_thread=False)
     cursor = conn.cursor()
     cursor.execute("UPDATE Users SET Latitude = ?, Longitude = ? WHERE Location = '?'", (Latitude, Longitude, Location))
     conn.commit()
     cursor.close()
     conn.close()
-def db_table_delete(Location:ast):
+def db_table_delete(Location:str):
     conn = sl.connect('Stabis.db', check_same_thread=False)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM Users WHERE Location = ?", (Location, ))
@@ -71,36 +69,30 @@ def add_object_2(message):
     us_time = tcoj(message.date)
     db_table_val(ID_User=us_id, Date= us_date, Time= us_time, Location=message.text)
 
-@bot.message_handler(func=lambda message: message.text == "Отправить геолокацию")
+'''@bot.message_handler(func=lambda message: message.text == "Отправить геолокацию")
 def add_geolog(message):
     msg = bot.send_message(message.chat.id, "Выберите объект", reply_markup=makeKeyboard())
-    bot.register_next_step_handler(msg, add_geolog2)
 
-@bot.callback_query_handler(func=lambda call:True)
+@bot.callback_query_handler(func=lambda msg:True)
 def add_geolog2(callback_query):
     text = callback_query.data
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     item1 = types.KeyboardButton("Отправить", request_location=True)
     markup.add(item1)
     if callback_query.data.startswith("['item'"):
-        print(ast.literal_eval(callback_query.data)[1])
         bot_msg = bot.send_message(callback_query.from_user.id, "Подтвердите", reply_markup=markup)
-        us_location = ast.literal_eval(callback_query.data)[1]
-        ast.literal_eval(callback_query.data)[1]
+        us_location = ast.literal_eval(callback_query.data)[1]'''
 
 @bot.message_handler(func=lambda message: message.text == "Удалить объект")
 def del_object(message):
     msg = bot.send_message(message.chat.id, "Выберите объект", reply_markup=delKeyboard())
-    bot.register_next_step_handler(msg, del_object2)
+
 @bot.callback_query_handler(func=lambda call:True)
-def del_object2(callback_query):
-    if callback_query.data.startswith("['del'"):
-        print(ast.literal_eval(callback_query.data)[1])
-        db_table_delete(Location=(ast.literal_eval(callback_query.data)[1]))
-        bot.send_message(callback_query.message.chat.id, 'Удалено')
-
-
-
+def del_object2(call):
+    if call.data.startswith("['del'"):
+        print(ast.literal_eval(call.data)[1])
+        db_table_delete(Location=(ast.literal_eval(call.data)[1]))
+        bot.send_message(call.message.chat.id, 'Удалено')
 
 '''@bot.message_handler(func=lambda message: message.text == "Реестр объектов")
 def reg_object(message):
@@ -115,8 +107,6 @@ def location(message):
         us_id = message.from_user.id
         us_date = tconv(message.date)
         us_time = tcoj(message.date)
-        us_location = add_geolog2
-        db_table_val(ID_User=us_id, Date=us_date, Time=us_time, Location=us_location)
 
 
 
@@ -132,15 +122,15 @@ def geocoder(latitude, longitude):
 def makeKeyboard():
     markup5 = types.InlineKeyboardMarkup()
     obInfo1 = db_table_select()
-    for item in obInfo1:
-        markup5.add(types.InlineKeyboardButton(text=item, callback_data="['item', '" + str(item) + "']"))
+    for result in obInfo1:
+        markup5.add(types.InlineKeyboardButton(text=result, callback_data="['item', '" + str(result) + "']"))
     return markup5
 
 def delKeyboard():
     markup6 = types.InlineKeyboardMarkup()
     obInfo1 = db_table_select()
-    for item in obInfo1:
-        markup6.add(types.InlineKeyboardButton(text=item, callback_data="['del', '" + str(item) + "']"))
+    for result in obInfo1:
+        markup6.add(types.InlineKeyboardButton(text=result, callback_data="['del', '" + str(result) + "']"))
     return markup6
 
 bot.polling(none_stop=True)
