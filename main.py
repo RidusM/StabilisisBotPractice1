@@ -1,25 +1,26 @@
 import telebot, requests, time, json, ast, sqlite3 as sl
 from telebot import types
-from flask import Flask, render_template, url_for, request
+from flask import Flask, render_template, app
 
-'''app = Flask(__name__)
-conn = sl.connect('Stabis.db', check_same_thread=False)
-cursor = conn.cursor()'''
+app =   Flask(__name__)
 
-token = '5367696164:AAHX8QGlpmlTMcvzgcx5QmYnv9KDs1X231I'
+token = None
+with open("token.txt") as f:
+    token = f.read().strip()
 bot = telebot.TeleBot(token)
+
 tconv = lambda x: time.strftime("%H:%M:%S", time.localtime(x))
 tcoj = lambda x: time.strftime("%d.%m.%Y", time.localtime(x))
 
-'''@app.route('/')
-@app.route('/home')
-def index():
-    cursor.execute('SELECT * FROM Users')
-    rows = cursor.fetchall()
-    return render_template("index.html", rows = rows)
+conn = sl.connect('Stabis.db', check_same_thread=False)
+cursor = conn.cursor()
 
-if __name__ == "__main__":
-    app.run(debug=True)'''
+@app.route('/index.html')
+def db_table_selectAll():
+    cursor.execute("SELECT * FROM Users")
+    data = cursor.fetchall()
+    return render_template('index.html', output_data = data)
+
 
 def db_table_select():
     conn = sl.connect('Stabis.db', check_same_thread=False)
@@ -92,23 +93,25 @@ def del_object(message):
     msg = bot.send_message(message.chat.id, "Выберите объект", reply_markup=delKeyboard())
 
 @bot.callback_query_handler(func=lambda msg:True)
-def del_object2(callback_query, us_projname = None):
+def del_object2(callback_query):
     text = callback_query.data
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    item1 = types.KeyboardButton("Отправить", request_location=True)
+    item1 = types.KeyboardButton(f"Подтвердите", request_location=True)
     markup.add(item1)
     if callback_query.data.startswith("['del'"):
         print(ast.literal_eval(callback_query.data)[1])
         db_table_delete(ProjName=(ast.literal_eval(callback_query.data)[1]))
         bot.send_message(callback_query.message.chat.id, 'Удалено')
     elif callback_query.data.startswith("['item'"):
-        bot_msg = bot.send_message(callback_query.from_user.id, f"{ast.literal_eval(callback_query.data)[1]}", reply_markup=markup)
+        print(ast.literal_eval(callback_query.data)[1])
+        bot_msg = bot.send_message(callback_query.from_user.id, f"Для подтверждения нажмите на кнопку", reply_markup=markup)
         us_projname = ast.literal_eval(callback_query.data)[1]
-        return us_projname
+        bot.register_next_step_handler(bot_msg, location)
 
-'''@bot.message_handler(func=lambda message: message.text == "Реестр объектов")
+@bot.message_handler(func=lambda message: message.text == "Реестр объектов")
 def reg_object(message):
-    msg = bot.send_message(message.chat.id)'''
+    bot.send_message(message.chat.id, db_table_selectAll())
+
 
 @bot.message_handler(content_types=["location"])
 def location(message):
@@ -119,6 +122,7 @@ def location(message):
         us_longitude = message.location.longitude
         us_latitude = message.location.latitude
         us_location = coords
+        db_table_update(Latitude=us_latitude, Longitude=us_longitude, Location=us_location, ProjName=message.from_user.text)
 
 
 
