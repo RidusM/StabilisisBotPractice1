@@ -1,8 +1,8 @@
 import telebot, requests, time, json, ast, sqlite3 as sl
 from telebot import types
-from flask import Flask, render_template, app
+'''from flask import Flask, render_template, app'''
 
-app =   Flask(__name__)
+'''app = Flask(__name__)'''
 
 token = None
 with open("token.txt") as f:
@@ -15,12 +15,23 @@ tcoj = lambda x: time.strftime("%d.%m.%Y", time.localtime(x))
 conn = sl.connect('Stabis.db', check_same_thread=False)
 cursor = conn.cursor()
 
-@app.route('/index.html')
+'''@app.route('/')
 def db_table_selectAll():
     cursor.execute("SELECT * FROM Users")
     data = cursor.fetchall()
-    return render_template('index.html', output_data = data)
+    return render_template('index.html', output_data = data)'''
 
+'''if __name__ == '__main__':
+    app.run(debug=True)'''
+
+def db_table_selectAll():
+    cursor.execute("SELECT * FROM Users")
+    data = cursor.fetchall()
+    my_list = []
+    for x in data:
+        my_list.append(''.join(str(x)))
+    my_str = ''.join(str(my_list))
+    return my_str
 
 def db_table_select():
     conn = sl.connect('Stabis.db', check_same_thread=False)
@@ -110,7 +121,7 @@ def del_object2(callback_query):
 
 @bot.message_handler(func=lambda message: message.text == "Реестр объектов")
 def reg_object(message):
-    bot.send_message(message.chat.id, db_table_selectAll())
+    bot.send_message(message.from_user.id, db_table_selectAll())
 
 
 @bot.message_handler(content_types=["location"])
@@ -122,8 +133,12 @@ def location(message):
         us_longitude = message.location.longitude
         us_latitude = message.location.latitude
         us_location = coords
-        db_table_update(Latitude=us_latitude, Longitude=us_longitude, Location=us_location, ProjName=message.from_user.text)
+        us_projname = ast.literal_eval(db_table_select2())
+        print(us_projname)
+        db_table_update(Latitude=us_latitude, Longitude=us_longitude, Location=us_location, ProjName=us_projname)
 
+@bot.callback_query_handler(content_types=["location"])
+def location(mydata):
 
 
 def geocoder(latitude, longitude):
