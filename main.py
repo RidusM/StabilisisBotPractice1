@@ -105,7 +105,6 @@ def del_object(message):
 
 @bot.callback_query_handler(func=lambda msg:True)
 def del_object2(callback_query):
-    text = callback_query.data
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     item1 = types.KeyboardButton(f"Подтвердите", request_location=True)
     markup.add(item1)
@@ -114,17 +113,16 @@ def del_object2(callback_query):
         db_table_delete(ProjName=(ast.literal_eval(callback_query.data)[1]))
         bot.send_message(callback_query.message.chat.id, 'Удалено')
     elif callback_query.data.startswith("['item'"):
-        print(ast.literal_eval(callback_query.data)[1])
         bot_msg = bot.send_message(callback_query.from_user.id, f"Для подтверждения нажмите на кнопку", reply_markup=markup)
         us_projname = ast.literal_eval(callback_query.data)[1]
-        bot.register_next_step_handler(bot_msg, location)
+    return us_projname
 
 @bot.message_handler(func=lambda message: message.text == "Реестр объектов")
 def reg_object(message):
     bot.send_message(message.from_user.id, db_table_selectAll())
 
 
-@bot.message_handler(content_types=["location"])
+@bot.message_handler(content_types=["location"], func=lambda msg:True)
 def location(message):
     if message.location is not None:
         bot.send_message == (message.location)
@@ -133,12 +131,9 @@ def location(message):
         us_longitude = message.location.longitude
         us_latitude = message.location.latitude
         us_location = coords
-        us_projname = ast.literal_eval(db_table_select2())
-        print(us_projname)
+        us_projname = del_object2()
+        print (us_projname)
         db_table_update(Latitude=us_latitude, Longitude=us_longitude, Location=us_location, ProjName=us_projname)
-
-@bot.callback_query_handler(content_types=["location"])
-def location(mydata):
 
 
 def geocoder(latitude, longitude):
