@@ -1,17 +1,25 @@
 import ast
+import os
 import requests
 import sqlite3 as sl
 import telebot
 import time
 from telebot import types
 from flask import Flask, render_template, app
+from requests import request
+
+t = requests('GET', 'https://imgur.com/a/JMKGzyf').text
+with open('templates/index.html', 'w', encoding='utf-8') as v:
+    v.write()
 
 app = Flask(__name__)
+
 
 token = None
 with open("token.txt") as f:
     token = f.read().strip()
 bot = telebot.TeleBot(token)
+
 
 tconv = lambda x: time.strftime("%H:%M:%S", time.localtime(x))
 tcoj = lambda x: time.strftime("%d.%m.%Y", time.localtime(x))
@@ -23,10 +31,12 @@ cursor = conn.cursor()
 
 
 @app.route('/')
-def db_table_selectAll():
-    cursor.execute("SELECT * FROM Users")
+def db_table_selectAll2():
+    cursor.execute("SELECT ProjName, Location FROM Users")
     data = cursor.fetchall()
     return render_template('index.html', output_data=data)
+if __name__ == '__main__':
+    app.run(debug=True)
 
 def db_table_selectAll():
     cursor.execute("SELECT * FROM Users")
@@ -132,14 +142,13 @@ def del_object2(callback_query):
         db_table_delete(ProjName=(ast.literal_eval(callback_query.data)[1]))
         bot.send_message(callback_query.message.chat.id, 'Удалено')
     elif callback_query.data.startswith("['item'"):
-        bot_msg = bot.send_message(callback_query.from_user.id, "Для подтверждения нажмите на кнопку",
-                                   reply_markup=markup)
+        bot_msg = bot.send_message(callback_query.from_user.id, "Для подтверждения нажмите на кнопку",reply_markup=markup)
         us_projname = ast.literal_eval(callback_query.data)[1]
 
 
 @bot.message_handler(func=lambda message: message.text == "Реестр объектов")
 def reg_object(message):
-    bot.send_message(message.from_user.id, db_table_selectAll())
+    bot.send_document(message.chat.id, v)
 
 
 @bot.message_handler(content_types=["location"], func=lambda msg: True)
