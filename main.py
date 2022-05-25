@@ -4,10 +4,9 @@ import sqlite3 as sl
 import telebot
 import time
 from telebot import types
+from flask import Flask, render_template, app
 
-'''from flask import Flask, render_template, app'''
-
-'''app = Flask(__name__)'''
+app = Flask(__name__)
 
 token = None
 with open("token.txt") as f:
@@ -22,14 +21,12 @@ us_projname = ''
 conn = sl.connect('Stabis.db', check_same_thread=False)
 cursor = conn.cursor()
 
-'''@app.route('/')
+
+@app.route('/')
 def db_table_selectAll():
     cursor.execute("SELECT * FROM Users")
     data = cursor.fetchall()
-    return render_template('index.html', output_data = data)'''
-
-'''if __name__ == '__main__':
-    app.run(debug=True)'''
+    return render_template('index.html', output_data=data)
 
 def db_table_selectAll():
     cursor.execute("SELECT * FROM Users")
@@ -40,6 +37,7 @@ def db_table_selectAll():
     my_str = ''.join(str(my_list))
     return my_str
 
+
 def db_table_select():
     conn = sl.connect('Stabis.db', check_same_thread=False)
     cursor = conn.cursor()
@@ -47,27 +45,35 @@ def db_table_select():
     obInfo = [item[0] for item in cursor.fetchall()]
     return obInfo
 
-def db_table_val(ID_User: int, Date: str, Time:str, ProjName:str):
+
+def db_table_val(ID_User: int, Date: str, Time: str, ProjName: str):
     conn = sl.connect('Stabis.db', check_same_thread=False)
     cursor = conn.cursor()
-    cursor.execute('INSERT INTO Users (ID_User, Date, Time, ProjName) VALUES (?,?,?,?)',(ID_User, Date, Time, ProjName))
+    cursor.execute('INSERT INTO Users (ID_User, Date, Time, ProjName) VALUES (?,?,?,?)',
+                   (ID_User, Date, Time, ProjName))
     conn.commit()
     cursor.close()
     conn.close()
-def db_table_update(Latitude: str, Longitude: str, Location:str, ProjName:str):
+
+
+def db_table_update(Latitude: str, Longitude: str, Location: str, ProjName: str):
     conn = sl.connect('Stabis.db', check_same_thread=False)
     cursor = conn.cursor()
-    cursor.execute("UPDATE Users SET Latitude = ?, Longitude = ?, Location = ? WHERE ProjName = ?", (Latitude, Longitude, Location, ProjName))
+    cursor.execute("UPDATE Users SET Latitude = ?, Longitude = ?, Location = ? WHERE ProjName = ?",
+                   (Latitude, Longitude, Location, ProjName))
     conn.commit()
     cursor.close()
     conn.close()
-def db_table_delete(ProjName:str):
+
+
+def db_table_delete(ProjName: str):
     conn = sl.connect('Stabis.db', check_same_thread=False)
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM Users WHERE ProjName = ?", (ProjName, ))
+    cursor.execute("DELETE FROM Users WHERE ProjName = ?", (ProjName,))
     conn.commit()
     cursor.close()
     conn.close()
+
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -78,9 +84,10 @@ def start(message):
     bot_msg = f"Привет, {mention}"
     bot.send_message(cid, bot_msg)
 
+
 @bot.message_handler(commands=['menu'])
 def button_message(message):
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     item1 = types.KeyboardButton('Добавить название объекта')
     item2 = types.KeyboardButton('Отправить геолокацию')
     item3 = types.KeyboardButton('Реестр объектов')
@@ -90,27 +97,32 @@ def button_message(message):
     markup.add(item3, item4)
     bot.send_message(message.chat.id, 'Выберите, что вам надо', reply_markup=markup)
 
+
 @bot.message_handler(func=lambda message: message.text == "Добавить название объекта")
 def add_object(message):
     msg = bot.send_message(message.chat.id, "Введите название объекта")
     bot.register_next_step_handler(msg, add_object_2)
 
+
 def add_object_2(message):
-    bot.send_message(message.chat.id, 'Мы запомнили это')
+    bot.send_message(message.chat.id, 'Мы запомнили это', reply_markup=None)
     us_id = message.from_user.id
     us_date = tconv(message.date)
     us_time = tcoj(message.date)
-    db_table_val(ID_User=us_id, Date= us_date, Time= us_time, ProjName=message.text)
+    db_table_val(ID_User=us_id, Date=us_date, Time=us_time, ProjName=message.text)
+
 
 @bot.message_handler(func=lambda message: message.text == "Отправить геолокацию")
 def add_geolog(message):
     msg = bot.send_message(message.chat.id, "Выберите объект", reply_markup=makeKeyboard())
 
+
 @bot.message_handler(func=lambda message: message.text == "Удалить объект")
 def del_object(message):
     msg = bot.send_message(message.chat.id, "Выберите объект", reply_markup=delKeyboard())
 
-@bot.callback_query_handler(func=lambda msg:True)
+
+@bot.callback_query_handler(func=lambda msg: True)
 def del_object2(callback_query):
     global us_projname
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -120,15 +132,17 @@ def del_object2(callback_query):
         db_table_delete(ProjName=(ast.literal_eval(callback_query.data)[1]))
         bot.send_message(callback_query.message.chat.id, 'Удалено')
     elif callback_query.data.startswith("['item'"):
-        bot_msg = bot.send_message(callback_query.from_user.id, f"Для подтверждения нажмите на кнопку", reply_markup=markup)
+        bot_msg = bot.send_message(callback_query.from_user.id, "Для подтверждения нажмите на кнопку",
+                                   reply_markup=markup)
         us_projname = ast.literal_eval(callback_query.data)[1]
+
 
 @bot.message_handler(func=lambda message: message.text == "Реестр объектов")
 def reg_object(message):
     bot.send_message(message.from_user.id, db_table_selectAll())
 
 
-@bot.message_handler(content_types=["location"], func=lambda msg:True)
+@bot.message_handler(content_types=["location"], func=lambda msg: True)
 def location(message):
     if message.location is not None:
         bot.send_message == (message.location)
@@ -137,7 +151,7 @@ def location(message):
         us_longitude = message.location.longitude
         us_latitude = message.location.latitude
         us_location = coords
-        print (us_projname)
+        print(us_projname)
         db_table_update(Latitude=us_latitude, Longitude=us_longitude, Location=us_location, ProjName=us_projname)
 
 
@@ -145,7 +159,9 @@ def geocoder(latitude, longitude):
     token2 = 'pk.0a7f690b1ee2f5bc671e79241d167b57'
     headers = {"Accept-Language": "ru"}
     try:
-        address = requests.get(f'https://eu1.locationiq.com/v1/reverse.php?key={token2}&lat={latitude}&lon={longitude}&format=json', headers=headers).json()
+        address = requests.get(
+            f'https://eu1.locationiq.com/v1/reverse.php?key={token2}&lat={latitude}&lon={longitude}&format=json',
+            headers=headers).json()
         return f'{address["address"].get("city")}, {address["address"].get("road")}, {address["address"].get("house_number")} '
     except Exception as e:
         return 'error'
@@ -158,10 +174,13 @@ def makeKeyboard():
         markup5.add(types.InlineKeyboardButton(text=result, callback_data="['item', '" + str(result) + "']"))
     return markup5
 
+
 def delKeyboard():
     markup6 = types.InlineKeyboardMarkup()
     obInfo1 = db_table_select()
     for result in obInfo1:
         markup6.add(types.InlineKeyboardButton(text=result, callback_data="['del', '" + str(result) + "']"))
     return markup6
+
+
 bot.polling(none_stop=True)
