@@ -1,18 +1,12 @@
 import ast
 import os
+import json
 import requests
 import sqlite3 as sl
 import telebot
 import time
 from telebot import types
-from flask import Flask, render_template, app
 from requests import request
-
-t = requests('GET', 'https://imgur.com/a/JMKGzyf').text
-with open('templates/index.html', 'w', encoding='utf-8') as v:
-    v.write()
-
-app = Flask(__name__)
 
 
 token = None
@@ -25,28 +19,64 @@ tconv = lambda x: time.strftime("%H:%M:%S", time.localtime(x))
 tcoj = lambda x: time.strftime("%d.%m.%Y", time.localtime(x))
 
 us_projname = ''
+Loca = ''
+Proj = ''
 
 conn = sl.connect('Stabis.db', check_same_thread=False)
 cursor = conn.cursor()
 
 
-@app.route('/')
-def db_table_selectAll2():
-    cursor.execute("SELECT ProjName, Location FROM Users")
-    data = cursor.fetchall()
-    return render_template('index.html', output_data=data)
-if __name__ == '__main__':
-    app.run(debug=True)
-
 def db_table_selectAll():
-    cursor.execute("SELECT * FROM Users")
-    data = cursor.fetchall()
-    my_list = []
-    for x in data:
-        my_list.append(''.join(str(x)))
-    my_str = ''.join(str(my_list))
-    return my_str
+    cursor.execute("SELECT ProjName FROM Users")
+    row = cursor.fetchone()
+    out = []
+    while row is not None:
+        out.append("%s\n" % row[0])
+        row = cursor.fetchone()
+    return ''.join(out)
 
+print (db_table_selectAll())
+
+
+def db_table_selectAll2():
+    cursor.execute("SELECT Location FROM Users")
+    row = cursor.fetchone()
+    out = []
+    while row is not None:
+        out.append("%s\n" % row[0])
+        row = cursor.fetchone()
+    return ''.join(out)
+
+
+print(db_table_selectAll2())
+
+html_str = (f'''<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <title>Title</title>
+    </head>
+    <body>
+        <table>
+            <thead>
+            <tr>
+                <th>Название проекта</th>
+                <th>Местоположение</th>
+            </tr>
+            </thead>
+            <tbody>
+                    <tr>
+                        <td align="center">.{db_table_selectAll()}</td>
+                        <td align="center">{db_table_selectAll2()}</td>
+                    </tr>
+            </tbody>
+        </table>
+    </body>
+</html>''')
+
+Html_file = open('templates/index.html', 'w')
+Html_file.write(html_str)
+Html_file.close()
 
 def db_table_select():
     conn = sl.connect('Stabis.db', check_same_thread=False)
@@ -97,15 +127,7 @@ def start(message):
 
 @bot.message_handler(commands=['menu'])
 def button_message(message):
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    item1 = types.KeyboardButton('Добавить название объекта')
-    item2 = types.KeyboardButton('Отправить геолокацию')
-    item3 = types.KeyboardButton('Реестр объектов')
-    item4 = types.KeyboardButton('Удалить объект')
-    markup.add(item1)
-    markup.add(item2)
-    markup.add(item3, item4)
-    bot.send_message(message.chat.id, 'Выберите, что вам надо', reply_markup=markup)
+    bot.send_message(message.chat.id, 'Выберите, что вам надо', reply_markup=newKeyboard())
 
 
 @bot.message_handler(func=lambda message: message.text == "Добавить название объекта")
@@ -148,7 +170,7 @@ def del_object2(callback_query):
 
 @bot.message_handler(func=lambda message: message.text == "Реестр объектов")
 def reg_object(message):
-    bot.send_document(message.chat.id, v)
+    bot.send_document(message.from_user.id)
 
 
 @bot.message_handler(content_types=["location"], func=lambda msg: True)
@@ -156,12 +178,12 @@ def location(message):
     if message.location is not None:
         bot.send_message == (message.location)
         coords = geocoder(message.location.latitude, message.location.longitude)
-        bot.send_message(message.chat.id, coords)
+        bot.send_message(message.chat.id, coords, reply_markup=newKeyboard())
         us_longitude = message.location.longitude
         us_latitude = message.location.latitude
         us_location = coords
-        print(us_projname)
         db_table_update(Latitude=us_latitude, Longitude=us_longitude, Location=us_location, ProjName=us_projname)
+
 
 
 def geocoder(latitude, longitude):
@@ -191,5 +213,15 @@ def delKeyboard():
         markup6.add(types.InlineKeyboardButton(text=result, callback_data="['del', '" + str(result) + "']"))
     return markup6
 
+def newKeyboard():
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    item1 = types.KeyboardButton('Добавить название объекта')
+    item2 = types.KeyboardButton('Отправить геолокацию')
+    item3 = types.KeyboardButton('Реестр объектов')
+    item4 = types.KeyboardButton('Удалить объект')
+    markup.add(item1)
+    markup.add(item2)
+    markup.add(item3, item4)
+    return markup
 
 bot.polling(none_stop=True)
