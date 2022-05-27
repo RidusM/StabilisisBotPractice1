@@ -1,4 +1,6 @@
 import ast
+import sqlite3
+
 import requests
 import sqlite3 as sl
 import telebot
@@ -34,32 +36,6 @@ def db_table_selectAll():
     return ''.join(out)
 
 
-html_str = (f'''<!DOCTYPE html>
-<html>
-    <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-        <title>Title</title>
-    </head>
-    <body>
-        <table border="1">
-            <tr>
-                <th>Название проекта</th>
-                <th>Местоположение</th>
-                <th>Широта</th>
-                <th>Долгота</th>
-            </tr>
-            <tr>
-                        {db_table_selectAll()}
-            </tr>
-        </table>
-    </body>
-</html>''')
-
-Html_file = open('templates/index.html', 'w')
-Html_file.write(html_str)
-Html_file.close()
-
-
 def db_table_select():
     conn = sl.connect('Stabis.db', check_same_thread=False)
     cursor = conn.cursor()
@@ -71,9 +47,13 @@ def db_table_select():
 def db_table_val(ID_User: int, Date: str, Time: str, ProjName: str):
     conn = sl.connect('Stabis.db', check_same_thread=False)
     cursor = conn.cursor()
-    cursor.execute('INSERT INTO Users (ID_User, Date, Time, ProjName) VALUES (?,?,?,?)',
-                   (ID_User, Date, Time, ProjName))
-    conn.commit()
+    try:
+        cursor.execute('INSERT INTO Users (ID_User, Date, Time, ProjName) VALUES (?,?,?,?)',
+                    (ID_User, Date, Time, ProjName))
+        conn.commit()
+    except sqlite3.Error as Er:
+        print('обшибка')
+        return 'error'
     cursor.close()
     conn.close()
 
@@ -153,6 +133,30 @@ def del_object2(callback_query):
 
 @bot.message_handler(func=lambda message: message.text == "Реестр объектов")
 def reg_object(message):
+    html_str = (f'''<!DOCTYPE html>
+    <html>
+        <head>
+            <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+            <title>Title</title>
+        </head>
+        <body>
+            <table border="1">
+                <tr>
+                    <th>Название проекта</th>
+                    <th>Местоположение</th>
+                    <th>Широта</th>
+                    <th>Долгота</th>
+                </tr>
+                <tr>
+                            {db_table_selectAll()}
+                </tr>
+            </table>
+        </body>
+    </html>''')
+
+    Html_file = open('templates/index.html', 'w')
+    Html_file.write(html_str)
+    Html_file.close()
     Html_file2 = open('templates/index.html', 'rb')
     bot.send_document(message.from_user.id, Html_file2)
 
