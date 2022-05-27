@@ -5,13 +5,10 @@ import telebot
 import time
 from telebot import types
 
-
-
 token = None
 with open("token.txt") as f:
     token = f.read().strip()
 bot = telebot.TeleBot(token)
-
 
 tconv = lambda x: time.strftime("%H:%M:%S", time.localtime(x))
 tcoj = lambda x: time.strftime("%d.%m.%Y", time.localtime(x))
@@ -22,6 +19,7 @@ Proj = ''
 
 conn = sl.connect('Stabis.db', check_same_thread=False)
 cursor = conn.cursor()
+
 
 def db_table_selectAll():
     cursor.execute("SELECT ProjName, Location, Latitude, Longitude FROM Users")
@@ -34,8 +32,6 @@ def db_table_selectAll():
         out.append("""\n<td align="center">%s</td></tr>""" % row[3])
         row = cursor.fetchone()
     return ''.join(out)
-
-print (db_table_selectAll())
 
 
 html_str = (f'''<!DOCTYPE html>
@@ -150,7 +146,8 @@ def del_object2(callback_query):
         db_table_delete(ProjName=(ast.literal_eval(callback_query.data)[1]))
         bot.send_message(callback_query.message.chat.id, 'Удалено')
     elif callback_query.data.startswith("['item'"):
-        bot_msg = bot.send_message(callback_query.from_user.id, "Для подтверждения нажмите на кнопку",reply_markup=markup)
+        bot_msg = bot.send_message(callback_query.from_user.id, "Для подтверждения нажмите на кнопку",
+                                   reply_markup=markup)
         us_projname = ast.literal_eval(callback_query.data)[1]
 
 
@@ -170,7 +167,6 @@ def location(message):
         us_latitude = message.location.latitude
         us_location = coords
         db_table_update(Latitude=us_latitude, Longitude=us_longitude, Location=us_location, ProjName=us_projname)
-
 
 
 def geocoder(latitude, longitude):
@@ -200,6 +196,7 @@ def delKeyboard():
         markup6.add(types.InlineKeyboardButton(text=result, callback_data="['del', '" + str(result) + "']"))
     return markup6
 
+
 def newKeyboard():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     item1 = types.KeyboardButton('Добавить название объекта')
@@ -210,5 +207,6 @@ def newKeyboard():
     markup.add(item2)
     markup.add(item3, item4)
     return markup
+
 
 bot.polling(none_stop=True)
