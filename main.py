@@ -24,12 +24,14 @@ conn = sl.connect('Stabis.db', check_same_thread=False)
 cursor = conn.cursor()
 
 def db_table_selectAll():
-    cursor.execute("SELECT ProjName, Location FROM Users")
+    cursor.execute("SELECT ProjName, Location, Latitude, Longitude FROM Users")
     row = cursor.fetchone()
     out = []
     while row is not None:
         out.append("""\n<tr><td align="center">%s</td>""" % row[0])
-        out.append("""\n<td align="center">%s</td></tr>""" % row[1])
+        out.append("""\n<td align="center">%s</td>""" % row[1])
+        out.append("""\n<td align="center">%s</td>""" % row[2])
+        out.append("""\n<td align="center">%s</td></tr>""" % row[3])
         row = cursor.fetchone()
     return ''.join(out)
 
@@ -39,14 +41,16 @@ print (db_table_selectAll())
 html_str = (f'''<!DOCTYPE html>
 <html>
     <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=windows-1251    ">
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <title>Title</title>
     </head>
     <body>
-        <table>
+        <table border="1">
             <tr>
                 <th>Название проекта</th>
                 <th>Местоположение</th>
+                <th>Широта</th>
+                <th>Долгота</th>
             </tr>
             <tr>
                         {db_table_selectAll()}
