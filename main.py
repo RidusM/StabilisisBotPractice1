@@ -1,12 +1,10 @@
 import ast
-import os
-import json
 import requests
 import sqlite3 as sl
 import telebot
 import time
 from telebot import types
-from requests import request
+
 
 
 token = None
@@ -25,51 +23,34 @@ Proj = ''
 conn = sl.connect('Stabis.db', check_same_thread=False)
 cursor = conn.cursor()
 
-
 def db_table_selectAll():
-    cursor.execute("SELECT ProjName FROM Users")
+    cursor.execute("SELECT ProjName, Location FROM Users")
     row = cursor.fetchone()
     out = []
     while row is not None:
-        out.append("%s\n" % row[0])
+        out.append("""\n<tr><td align="center">%s</td>""" % row[0])
+        out.append("""\n<td align="center">%s</td></tr>""" % row[1])
         row = cursor.fetchone()
     return ''.join(out)
 
 print (db_table_selectAll())
 
 
-def db_table_selectAll2():
-    cursor.execute("SELECT Location FROM Users")
-    row = cursor.fetchone()
-    out = []
-    while row is not None:
-        out.append("%s\n" % row[0])
-        row = cursor.fetchone()
-    return ''.join(out)
-
-
-print(db_table_selectAll2())
-
 html_str = (f'''<!DOCTYPE html>
 <html>
     <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <meta http-equiv="Content-Type" content="text/html; charset=windows-1251    ">
         <title>Title</title>
     </head>
     <body>
         <table>
-            <thead>
             <tr>
                 <th>Название проекта</th>
                 <th>Местоположение</th>
             </tr>
-            </thead>
-            <tbody>
-                    <tr>
-                        <td align="center">.{db_table_selectAll()}</td>
-                        <td align="center">{db_table_selectAll2()}</td>
-                    </tr>
-            </tbody>
+            <tr>
+                        {db_table_selectAll()}
+            </tr>
         </table>
     </body>
 </html>''')
@@ -77,6 +58,7 @@ html_str = (f'''<!DOCTYPE html>
 Html_file = open('templates/index.html', 'w')
 Html_file.write(html_str)
 Html_file.close()
+
 
 def db_table_select():
     conn = sl.connect('Stabis.db', check_same_thread=False)
@@ -170,7 +152,8 @@ def del_object2(callback_query):
 
 @bot.message_handler(func=lambda message: message.text == "Реестр объектов")
 def reg_object(message):
-    bot.send_document(message.from_user.id)
+    Html_file2 = open('templates/index.html', 'rb')
+    bot.send_document(message.from_user.id, Html_file2)
 
 
 @bot.message_handler(content_types=["location"], func=lambda msg: True)
